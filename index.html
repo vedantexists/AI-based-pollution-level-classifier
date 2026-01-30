@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Based AQI Monitoring System | India</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1e88e5;
+            --bg: #f0f4f8;
+            --card: #ffffff;
+        }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: #333; }
+        
+        /* Background Animations */
+        .sky { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: linear-gradient(to bottom, #87CEEB, #E0F7FA); overflow: hidden; }
+        .cloud { position: absolute; background: #fff; border-radius: 50px; opacity: 0.8; animation: move 100s linear infinite; }
+        @keyframes move { from { transform: translateX(-200px); } to { transform: translateX(100vw); } }
+
+        /* Header */
+        header { background: var(--primary); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        header h1 { margin: 0; font-size: 1.5rem; }
+        .search-box { display: flex; gap: 10px; }
+        input { padding: 8px 15px; border-radius: 20px; border: none; outline: none; }
+
+        /* Main Layout */
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+        /* Cards */
+        .card { background: var(--card); border-radius: 15px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .aqi-display { text-align: center; padding: 20px; }
+        .aqi-num { font-size: 4rem; font-weight: bold; margin: 10px 0; }
+        .status-badge { padding: 8px 20px; border-radius: 25px; color: white; font-weight: bold; display: inline-block; }
+
+        /* Pollutants Grid */
+        .pollutants { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+        .p-box { background: #f8f9fa; padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #eee; }
+        .p-box b { display: block; font-size: 1.1rem; color: var(--primary); }
+        .p-box small { font-size: 0.7rem; color: #666; }
+
+        /* Health Tips */
+        .health-tips { background: #fffde7; border-left: 5px solid #fbc02d; padding: 15px; border-radius: 5px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+        th { background: #f1f1f1; }
+    </style>
+</head>
+<body>
+
+<div class="sky">
+    <div class="cloud" style="top:10%; width:150px; height:50px; animation-delay: -10s;"></div>
+    <div class="cloud" style="top:30%; width:200px; height:60px; animation-delay: -40s;"></div>
+</div>
+   <header>
+    <h1>🇮🇳 AI-AQI Monitor</h1>
+    <div class="search-box">
+        <input type="text" id="citySearch" list="cityList" placeholder="Enter City Name...">
+        <datalist id="cityList">
+            <option value="Delhi">
+            <option value="Mumbai">
+            <option value="Thane">
+            <option value="Kolkata">
+            <option value="Chennai">
+            <option value="Bengaluru">
+            <option value="Hyderabad">
+        </datalist>
+        <button style="border:none; background:white; color:var(--primary); font-weight:bold; border-radius:20px; padding:0 15px; cursor:pointer;" onclick="search()">Search</button>
+    </div>
+</header>
+
+
+<div class="container">
+    <div class="grid">
+        <div class="card">
+            <div class="aqi-display">
+                <h2 id="dispCity">Mumbai</h2>
+                <div class="aqi-num" id="dispAQI">120</div>
+                <div class="status-badge" id="dispStatus">Moderately Polluted</div>
+                
+                <div class="pollutants">
+                    <div class="p-box">PM2.5<br><b id="v_pm25">--</b><small>µg/m³</small></div>
+                    <div class="p-box">PM10<br><b id="v_pm10">--</b><small>µg/m³</small></div>
+                     <div class="p-box">NO₂<br><b id="v_no2">--</b><small>µg/m³</small></div>
+                    <div class="p-box">SO₂<br><b id="v_so2">--</b><small>µg/m³</small></div>
+                    <div class="p-box">CO<br><b id="v_co">--</b><small>mg/m³</small></div>
+                    <div class="p-box">O₃<br><b id="v_o3">--</b><small>µg/m³</small></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🛡️ AI Health Recommendations</h3>
+            <div id="healthAdvice" class="health-tips">
+                Loading AI recommendations based on current air quality...
+            </div>
+            <h3 style="margin-top:20px;">📈 AQI Real-time Trend</h3>
+            <canvas id="aqiChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>National Air Quality Index (NAQI) Scale</h3>
+        <table>
+            <thead><tr><th>Category</th><th>Range</th><th>Health Impact</th></tr></thead>
+            <tbody>
+                <tr style="color:#2ecc71; font-weight:bold;"><td>Good</td><td>0-50</td><td>Minimal Impact</td></tr>
+                <tr style="color:#92d050; font-weight:bold;"><td>Satisfactory</td><td>51-100</td><td>Minor breathing discomfort to sensitive people</td></tr>
+                <tr style="color:#fbc02d; font-weight:bold;"><td>Moderately Polluted</td><td>101-200</td><td>Breathing discomfort to children and elderly</td></tr>
+                <tr style="color:#fb8c00; font-weight:bold;"><td>Poor</td><td>201-300</td><td>Breathing discomfort to most people on prolonged exposure</td></tr>
+                <tr style="color:#ff0000; font-weight:bold;"><td>Very Poor</td><td>301-400</td><td>Respiratory illness on prolonged exposure</td></tr>
+                <tr style="color:#990000; font-weight:bold;"><td>Severe</td><td>401-500</td><td>Affects healthy people; impacts those with existing diseases</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// 1. DATA DATABASE (Simulating Phase 1 Model Output)
+const DB = {
+    "Delhi": {aqi:320, pm25:210, pm10:350, no2:55, so2:20, co:1.8, o3:45},
+    "Mumbai": {aqi:115, pm25:65, pm10:140, no2:32, so2:12, co:0.9, o3:30},
+    "Thane": {aqi:95, pm25:45, pm10:110, no2:28, so2:10, co:0.7, o3:35}
+};
+
+let chart;
+
+// 2. SCIENTIFIC NAQI LOGIC
+function getNAQIInfo(val) {
+    if (val <= 50) return {label: "Good", color: "#2ecc71", tip: "✔ Air quality is ideal. Open windows for ventilation."};
+    if (val <= 100) return {label: "Satisfactory", color: "#92d050", tip: "✔ Satisfactory. Sensitive people should reduce heavy outdoor exertion."};
+    if (val <= 200) return {label: "Moderately Polluted", color: "#fbc02d", tip: "⚠ Moderately Polluted. Children and elderly should limit outdoor time."};
+    if (val <= 300) return {label: "Poor", color: "#fb8c00", tip: "✖ Poor Quality. Wear an N95 mask if going outdoors for long."};
+    if (val <= 400) return {label: "Very Poor", color: "#ff0000", tip: "🚨 Very Poor. Avoid outdoor physical activity. Keep windows closed."};
+    return {label: "Severe", color: "#990000", tip: "🚫 SEVERE. Everyone should stay indoors. Use air purifiers."};
+}
+
+// 3. UPDATE UI LOGIC
+function updateUI(city) {
+    const data = DB[city];
+    const info = getNAQIInfo(data.aqi);
+
+    document.getElementById('dispCity').innerText = "City: " + city;
+    document.getElementById('dispAQI').innerText = data.aqi;
+    
+    const badge = document.getElementById('dispStatus');
+    badge.innerText = info.label;
+    badge.style.background = info.color;
+
+    document.getElementById('healthAdvice').innerText = info.tip;
+    document.getElementById('healthAdvice').style.borderLeftColor = info.color;
+
+    // Set pollutant values
+    document.getElementById('v_pm25').innerText = data.pm25;
+    document.getElementById('v_pm10').innerText = data.pm10;
+    document.getElementById('v_no2').innerText = data.no2;
+    document.getElementById('v_so2').innerText = data.so2;
+    document.getElementById('v_co').innerText = data.co;
+    document.getElementById('v_o3').innerText = data.o3;
+
+    updateChart(data.aqi);
+}
+
+// 4. CHART LOGIC
+function updateChart(val) {
+    const ctx = document.getElementById('aqiChart').getContext('2d');
+    if (chart) {
+        chart.data.datasets[0].data.push(val);
+        chart.data.labels.push("");
+        chart.update();
+    } else {
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: [""], datasets: [{ label: 'AQI Trend', data: [val], borderColor: '#1e88e5', fill: false }] }
+        });
+    }
+}
+
+// 5. THE FIXED SEARCH FUNCTION
+async function search() {
+    // 1. Get and clean the city name
+    let input = document.getElementById('citySearch').value.trim().toLowerCase();
+    input = input.replace(/\.$/, ""); // Handles full stops
+
+    const matchedCity = Object.keys(DB).find(key => key.toLowerCase() === input);
+
+    if (matchedCity) {
+        // 2. Prepare the pollutant data from your DB.
+        const data = DB[matchedCity];
+        const pollutantData = {
+            pm25: data.pm25,
+            pm10: data.pm10,
+            no2: data.no2,
+            co: data.co,
+            so2: data.so2,
+            o3: data.o3
+        };
+
+        try {
+            // 3. The Fetch Handshake with Pydroid
+            const response = await fetch("http://192.168.0.104:5000/predict", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pollutantData)
+            });
+
+            const result = await response.json();
+
+            // 4. Final Display Logic
+            if (result.status === "success") {
+                updateUI(matchedCity); 
+                document.getElementById('dispStatus').innerText = "AI Result: " + result.aqi_bucket;
+                document.getElementById('dispStatus').style.background = "#1e88e5"; // Highlight AI success
+            }
+        } catch (error) {
+            console.error("Connection failed:", error);
+            alert("Backend Not Found! Ensure Pydroid is running at 192.168.0.104");
+        }
+    } else {
+        alert("City not in database!");
+    }
+}
+
+
+// Initialize with default
+updateUI("Mumbai");
+
+</script>
+
+</body>
+</html>
